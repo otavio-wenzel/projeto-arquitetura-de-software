@@ -1,34 +1,30 @@
-package com.example.app_ajudai
+package com.example.app_ajudai.ui
 
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons // <<< A ÚNICA IMPORTAÇÃO DE ÍCONE
-import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.app_ajudai.ui.theme.AppajudaiTheme
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Person
+import com.example.app_ajudai.AppViewModel
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.unit.dp
+import com.example.app_ajudai.ui.ProfileScreen
+import com.example.app_ajudai.ui.FeedScreen
+import com.example.app_ajudai.ui.SearchScreen
 
-
-// (Screen e items continuam iguais)
 sealed class Screen(val route: String, val label: String, val icon: @Composable () -> Unit) {
     object Feed : Screen("feed", "Início", { Icon(Icons.Filled.Home, contentDescription = "Início") })
     object Search : Screen("search", "Pesquisa", { Icon(Icons.Filled.Search, contentDescription = "Pesquisa") })
@@ -36,12 +32,11 @@ sealed class Screen(val route: String, val label: String, val icon: @Composable 
 }
 val items = listOf(Screen.Feed, Screen.Search, Screen.Profile)
 
-
 @Composable
 fun MainAppScreen(
     appViewModel: AppViewModel,
     onNavigateToSolicitarFavor: () -> Unit,
-    onNavigateToFavorDetail: (String) -> Unit
+    onNavigateToFavorDetail: (Long) -> Unit
 ) {
     val navController = rememberNavController()
 
@@ -64,13 +59,7 @@ fun MainAppScreen(
                                 launchSingleTop = true
                                 restoreState = true
                             }
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
+                        }
                     )
                 }
             }
@@ -81,36 +70,20 @@ fun MainAppScreen(
             startDestination = Screen.Feed.route,
             Modifier.padding(innerPadding)
         ) {
-            // FeedScreen (agora simples)
             composable(Screen.Feed.route) {
                 FeedScreen(
+                    appViewModel = appViewModel,
                     onAddFavorClick = onNavigateToSolicitarFavor,
                     onFavorClick = onNavigateToFavorDetail
                 )
             }
-            // SearchScreen (agora inteligente)
             composable(Screen.Search.route) {
                 SearchScreen(
                     appViewModel = appViewModel,
-                    // Passa a navegação para o SearchScreen também
                     onNavigateToFavorDetail = onNavigateToFavorDetail
                 )
             }
             composable(Screen.Profile.route) { ProfileScreen() }
         }
-    }
-}
-
-
-@Preview(showBackground = true)
-@Composable
-fun MainAppScreenPreview() {
-    val fakeViewModel = AppViewModel()
-    AppajudaiTheme {
-        MainAppScreen(
-            appViewModel = fakeViewModel,
-            onNavigateToSolicitarFavor = {},
-            onNavigateToFavorDetail = {}
-        )
     }
 }

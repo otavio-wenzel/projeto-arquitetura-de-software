@@ -1,39 +1,37 @@
 package com.example.app_ajudai
 
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import androidx.lifecycle.viewModelScope
+import com.example.app_ajudai.data.Favor
+import com.example.app_ajudai.data.FavorRepository
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 
-/**
- * O "cérebro" (ViewModel) compartilhado pela nossa aplicação.
- * Ele guarda o estado dos filtros de pesquisa.
- */
-class AppViewModel : ViewModel() {
+class AppViewModel(private val repo: FavorRepository) : ViewModel() {
 
-    // --- FILTROS DE CATEGORIA ---
-
-    // 1. O Estado "privado" e "mutável" (só o ViewModel pode alterar)
-    // Guarda um "Set" (conjunto) de strings, que são as categorias selecionadas.
+    // Filtros
     private val _selectedCategories = MutableStateFlow(emptySet<String>())
+    val selectedCategories: StateFlow<Set<String>> = _selectedCategories.asStateFlow()
 
-    // 2. O Estado "público" e "somente leitura" (as telas podem ler)
-    // As telas vão "ouvir" este StateFlow para saber quando os filtros mudam.
-    val selectedCategories = _selectedCategories.asStateFlow()
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    /**
-     * Ação que as telas podem chamar para adicionar ou remover um filtro de categoria.
-     */
     fun toggleCategory(category: String) {
-        // 'update' é uma forma segura de alterar o estado
-        _selectedCategories.update { currentSet ->
-            if (currentSet.contains(category)) {
-                // Se já continha, cria um novo Set SEM ela
-                currentSet - category
-            } else {
-                // Se não continha, cria um novo Set COM ela
-                currentSet + category
-            }
-        }
+        _selectedCategories.update { set -> if (set.contains(category)) set - category else set + category }
     }
+
+    fun setSearchQuery(q: String) { _searchQuery.value = q }
+
+    // Lista observável (filtrada)
+    val favores: StateFlow<List<Favor>> =
+        combine(_searchQuery, _selectedCategories) { q, cats -> q to cats }
+            .flatMapLatest { (q, cats) -> repo.observarFiltrados(q.ifBlank { null }, cats) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    // Ações CRUD
+    fun criarFavor(titulo: String, descricao: String, categoria: String) = viewModelScope.launch {
+        repo.inserir(titulo, descricao, categoria)
+    }
+
+    fun deletarFavor(favor: Favor) = viewModelScope.launch { repo.deletar(favor) }
 }

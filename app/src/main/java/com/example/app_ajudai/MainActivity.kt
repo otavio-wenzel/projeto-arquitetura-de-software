@@ -8,25 +8,27 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-// --- IMPORT ADICIONADO ---
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.app_ajudai.data.AppDatabase
+import com.example.app_ajudai.data.FavorRepositoryRoom
+import com.example.app_ajudai.ui.FavorDetailScreen
+import com.example.app_ajudai.ui.MainAppScreen
+import com.example.app_ajudai.ui.SolicitarFavorScreen
 import com.example.app_ajudai.ui.theme.AppajudaiTheme
-import com.example.app_ajudai.MainAppScreen
+import androidx.compose.ui.platform.LocalContext
+import com.example.app_ajudai.ui.LoginScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             AppajudaiTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
+                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     AppNavigation()
                 }
             }
@@ -34,21 +36,16 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
 @Composable
 fun AppNavigation() {
-    // --- O VIEWMODEL É CRIADO AQUI ---
-    // Isto cria o ViewModel e o liga ao ciclo de vida da navegação
-    val appViewModel: AppViewModel = viewModel()
-
+    val context = LocalContext.current
+    val appVM: AppViewModel = viewModel(
+        factory = AppViewModelFactory(app = context.applicationContext as android.app.Application)
+    )
     val navController = rememberNavController()
 
-    NavHost(
-        navController = navController,
-        startDestination = "login"
-    ) {
-
-        composable(route = "login") {
+    NavHost(navController = navController, startDestination = "login") {
+        composable("login") {
             LoginScreen(
                 onLoginSuccess = {
                     navController.navigate("main") {
@@ -57,38 +54,29 @@ fun AppNavigation() {
                 }
             )
         }
-
-        composable(route = "main") {
+        composable("main") {
             MainAppScreen(
-                // --- PASSAMOS O VIEWMODEL PARA A TELA PRINCIPAL ---
-                appViewModel = appViewModel,
-
-                onNavigateToSolicitarFavor = {
-                    navController.navigate("solicitar_favor")
-                },
-                onNavigateToFavorDetail = { favorId ->
-                    navController.navigate("favor_detail/$favorId")
-                }
+                appViewModel = appVM,
+                onNavigateToSolicitarFavor = { navController.navigate("solicitar_favor") },
+                onNavigateToFavorDetail = { favorId -> navController.navigate("favor_detail/$favorId") }
             )
         }
-
-        composable(route = "solicitar_favor") {
+        composable("solicitar_favor") {
             SolicitarFavorScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
+                appViewModel = appVM,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
-
         composable(
-            route = "favor_detail/{favorId}",
-            arguments = listOf(navArgument("favorId") { type = NavType.StringType })
+            "favor_detail/{favorId}",
+            arguments = listOf(navArgument("favorId") { type = NavType.LongType })
         ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getLong("favorId") ?: -1L
+            val repo = FavorRepositoryRoom(AppDatabase.get(context).favorDao())
             FavorDetailScreen(
-                favorId = backStackEntry.arguments?.getString("favorId"),
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
+                favorId = id,
+                repo = repo,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }
