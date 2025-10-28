@@ -17,76 +17,59 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.app_ajudai.R
+import androidx.compose.runtime.collectAsState
+import kotlinx.coroutines.flow.flowOf
+import androidx.compose.runtime.*
+import com.example.app_ajudai.AuthViewModel
+import com.example.app_ajudai.data.User
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen() {
-    // Mock simples só para exibição
-    val nome = "Dona Clotilde"
-    val local = "Copacabana, RJ"
-    val confianca = 4.5f
-    val temSelo = true
+fun ProfileScreen(authViewModel: AuthViewModel) {
+    // observa o id atual da sessão
+    val currentUserId by authViewModel.currentUserId.collectAsState(initial = null)
+
+    // pega um Flow<User?> válido (ou flowOf(null) se não houver usuário)
+    val userFlow = remember(currentUserId) {
+        authViewModel.observeUser() ?: flowOf<User?>(null)
+    }
+
+    // coleta o usuário (pode ser null)
+    val user by userFlow.collectAsState(initial = null)
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Meu Perfil", style = MaterialTheme.typography.titleLarge) },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                title = { Text("Meu Perfil", style = MaterialTheme.typography.titleLarge) }
             )
         }
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(Modifier.height(16.dp))
-
-            // Foto (usa o mesmo drawable; se não existir, pode trocar)
-            runCatching {
-                Image(
-                    painter = painterResource(id = R.drawable.ajudai_transparente),
-                    contentDescription = "Foto de Perfil",
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                )
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(nome, style = MaterialTheme.typography.titleLarge)
-                if (temSelo) {
-                    Spacer(Modifier.width(8.dp))
-                    Icon(
-                        imageVector = Icons.Filled.Verified,
-                        contentDescription = "Selo de Ajuda",
-                        tint = MaterialTheme.colorScheme.tertiary
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(8.dp))
-
-            InfoRow(Icons.Filled.LocationOn, local)
-            Spacer(Modifier.height(8.dp))
-            InfoRow(Icons.Filled.Star, "Confiança: $confianca / 5.0")
-
-            Spacer(Modifier.height(24.dp))
-
-            Button(
-                onClick = { /* TODO: logout */ },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+        if (user != null) {
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Sair", style = MaterialTheme.typography.labelLarge)
+                Text(user!!.name, style = MaterialTheme.typography.titleLarge)
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.LocationOn, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(user!!.location, style = MaterialTheme.typography.bodyLarge)
+                }
+                Spacer(Modifier.height(24.dp))
+                Button(onClick = { authViewModel.logout() }) { Text("Sair") }
+            }
+        } else {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Faça login para ver seu perfil.")
             }
         }
     }

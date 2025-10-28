@@ -21,9 +21,8 @@ import com.example.app_ajudai.AppViewModel
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.unit.dp
-import com.example.app_ajudai.ui.ProfileScreen
-import com.example.app_ajudai.ui.FeedScreen
-import com.example.app_ajudai.ui.SearchScreen
+import com.example.app_ajudai.AuthViewModel
+
 
 sealed class Screen(val route: String, val label: String, val icon: @Composable () -> Unit) {
     object Feed : Screen("feed", "Início", { Icon(Icons.Filled.Home, contentDescription = "Início") })
@@ -32,11 +31,14 @@ sealed class Screen(val route: String, val label: String, val icon: @Composable 
 }
 val items = listOf(Screen.Feed, Screen.Search, Screen.Profile)
 
+
+
 @Composable
 fun MainAppScreen(
     appViewModel: AppViewModel,
     onNavigateToSolicitarFavor: () -> Unit,
-    onNavigateToFavorDetail: (Long) -> Unit
+    onNavigateToFavorDetail: (Long) -> Unit,
+    authViewModel: AuthViewModel
 ) {
     val navController = rememberNavController()
 
@@ -83,7 +85,8 @@ fun MainAppScreen(
                     onNavigateToFavorDetail = onNavigateToFavorDetail
                 )
             }
-            composable(Screen.Profile.route) { ProfileScreen() }
+            composable(Screen.Profile.route) { ProfileScreen(authViewModel = authViewModel) }
         }
     }
 }
+
