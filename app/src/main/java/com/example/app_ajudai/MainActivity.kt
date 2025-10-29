@@ -49,10 +49,12 @@ class MainActivity : ComponentActivity() {
 fun AppNavigation() {
     val context = LocalContext.current
 
+    // AppViewModel
     val appVM: AppViewModel = viewModel(
         factory = AppViewModelFactory(app = context.applicationContext as Application)
     )
 
+    // AuthViewModel
     val authViewModel: AuthViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -62,16 +64,15 @@ fun AppNavigation() {
         }
     )
 
-    // NÃO use mais currentUserId pra decidir startDestination aqui
     val navController = rememberNavController()
 
     NavHost(
         navController = navController,
-        startDestination = "welcome"   // ⬅️ sempre começa na Welcome
+        startDestination = "welcome"
     ) {
         composable("welcome") {
             WelcomeScreen(
-                authViewModel = authViewModel,            // ⬅️ passamos o VM
+                authViewModel = authViewModel,
                 onGoLogin = { navController.navigate("login") },
                 onGoSignUp = { navController.navigate("signup") },
                 onAutoForwardToMain = {
@@ -99,6 +100,7 @@ fun AppNavigation() {
             SignUpScreen(
                 authViewModel = authViewModel,
                 onSuccess = {
+                    // após criar conta, pode mandar para o login (ou direto pro main, se preferir)
                     navController.navigate("login") {
                         popUpTo("welcome") { inclusive = false }
                         launchSingleTop = true
@@ -115,7 +117,15 @@ fun AppNavigation() {
                 onNavigateToFavorDetail = { favorId ->
                     navController.navigate("favor_detail/$favorId")
                 },
-                authViewModel = authViewModel
+                authViewModel = authViewModel,
+                onRequestLogout = {
+                    // derruba sessão e vai para a Welcome limpando a pilha inteira
+                    authViewModel.logout()
+                    navController.navigate("welcome") {
+                        popUpTo(0)
+                        launchSingleTop = true
+                    }
+                }
             )
         }
 

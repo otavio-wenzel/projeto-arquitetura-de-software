@@ -22,25 +22,31 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.unit.dp
 import com.example.app_ajudai.AuthViewModel
-
+import androidx.compose.runtime.*
 
 sealed class Screen(val route: String, val label: String, val icon: @Composable () -> Unit) {
     object Feed : Screen("feed", "Início", { Icon(Icons.Filled.Home, contentDescription = "Início") })
     object Search : Screen("search", "Pesquisa", { Icon(Icons.Filled.Search, contentDescription = "Pesquisa") })
     object Profile : Screen("profile", "Perfil", { Icon(Icons.Filled.Person, contentDescription = "Perfil") })
 }
-val items = listOf(Screen.Feed, Screen.Search, Screen.Profile)
-
-
+private val items = listOf(Screen.Feed, Screen.Search, Screen.Profile)
 
 @Composable
 fun MainAppScreen(
     appViewModel: AppViewModel,
     onNavigateToSolicitarFavor: () -> Unit,
     onNavigateToFavorDetail: (Long) -> Unit,
-    authViewModel: AuthViewModel
+    authViewModel: AuthViewModel,
+    onRequestLogout: () -> Unit
 ) {
-    val navController = rememberNavController()
+    val tabsController = rememberNavController()
+
+    // 🚧 Guarda de sessão dentro do "main":
+    // Se a sessão cair (logout), pedimos para o Nav raiz ir para a Welcome.
+    val currentUserId by authViewModel.currentUserId.collectAsState(initial = null)
+    LaunchedEffect(currentUserId) {
+        if (currentUserId == null) onRequestLogout()
+    }
 
     Scaffold(
         bottomBar = {
@@ -48,7 +54,7 @@ fun MainAppScreen(
                 containerColor = MaterialTheme.colorScheme.surface,
                 modifier = Modifier.shadow(elevation = 8.dp)
             ) {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val navBackStackEntry by tabsController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination
                 items.forEach { screen ->
                     NavigationBarItem(
@@ -56,8 +62,8 @@ fun MainAppScreen(
                         label = { Text(screen.label, style = MaterialTheme.typography.bodyMedium) },
                         selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                         onClick = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            tabsController.navigate(screen.route) {
+                                popUpTo(tabsController.graph.findStartDestination().id) { saveState = true }
                                 launchSingleTop = true
                                 restoreState = true
                             }
@@ -68,9 +74,9 @@ fun MainAppScreen(
         }
     ) { innerPadding ->
         NavHost(
-            navController,
+            navController = tabsController,
             startDestination = Screen.Feed.route,
-            Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Feed.route) {
                 FeedScreen(
@@ -85,8 +91,12 @@ fun MainAppScreen(
                     onNavigateToFavorDetail = onNavigateToFavorDetail
                 )
             }
-            composable(Screen.Profile.route) { ProfileScreen(authViewModel = authViewModel) }
+            composable(Screen.Profile.route) {
+                ProfileScreen(
+                    authViewModel = authViewModel,
+                    onLogout = onRequestLogout   // 🔗 repassa ação de sair
+                )
+            }
         }
     }
 }
-
