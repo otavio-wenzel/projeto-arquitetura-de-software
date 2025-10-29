@@ -20,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
 import com.example.app_ajudai.AuthViewModel
 import com.example.app_ajudai.data.AuthResult
+import androidx.compose.ui.text.style.TextAlign
 
 @Composable
 fun LoginScreen(
@@ -35,7 +36,12 @@ fun LoginScreen(
         Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Entrar", style = MaterialTheme.typography.titleLarge)
+        Text(
+            text = "Entrar",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.fillMaxWidth(),   // ocupa a largura
+            textAlign = TextAlign.Center          // centraliza o texto
+        )
         Spacer(Modifier.height(16.dp))
 
         OutlinedTextField(

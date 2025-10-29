@@ -9,60 +9,59 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.app_ajudai.AuthViewModel
 import com.example.app_ajudai.data.AuthResult
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.text.style.TextAlign
 
 @Composable
 fun SignUpScreen(
     authViewModel: AuthViewModel,
-    onSuccessGoLogin: () -> Unit
+    onSuccess: () -> Unit,
+    onBack: () -> Unit
 ) {
-    var name by remember { mutableStateOf("") }
-    var location by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
-    var loading by remember { mutableStateOf(false) }
+    var name by rememberSaveable { mutableStateOf("") }
+    var location by rememberSaveable { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
+    var error by rememberSaveable { mutableStateOf<String?>(null) }
+    var loading by rememberSaveable { mutableStateOf(false) }
 
     Column(
-        Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Criar Conta", style = MaterialTheme.typography.titleLarge)
+        Text(
+            text = "Criar conta",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.fillMaxWidth(),   // ocupa a largura
+            textAlign = TextAlign.Center          // centraliza o texto
+        )
         Spacer(Modifier.height(16.dp))
 
         OutlinedTextField(
             value = name, onValueChange = { name = it },
-            label = { Text("Nome") },
-            singleLine = true, modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            label = { Text("Nome") }, singleLine = true, modifier = Modifier.fillMaxWidth()
         )
-
         Spacer(Modifier.height(12.dp))
 
         OutlinedTextField(
             value = location, onValueChange = { location = it },
-            label = { Text("Local onde mora") },
-            singleLine = true, modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            label = { Text("Local onde mora") }, singleLine = true, modifier = Modifier.fillMaxWidth()
         )
-
         Spacer(Modifier.height(12.dp))
 
         OutlinedTextField(
             value = email, onValueChange = { email = it },
-            label = { Text("E-mail") },
-            singleLine = true, modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            label = { Text("E-mail") }, singleLine = true, modifier = Modifier.fillMaxWidth()
         )
-
         Spacer(Modifier.height(12.dp))
 
         OutlinedTextField(
             value = password, onValueChange = { password = it },
-            label = { Text("Senha") },
-            singleLine = true,
+            label = { Text("Senha") }, singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            modifier = Modifier.fillMaxWidth()
         )
 
         if (error != null) {
@@ -71,24 +70,27 @@ fun SignUpScreen(
         }
 
         Spacer(Modifier.height(24.dp))
-
         Button(
             onClick = {
                 loading = true
                 authViewModel.signUp(name, location, email, password) { res ->
                     loading = false
                     when (res) {
-                        is AuthResult.Success -> onSuccessGoLogin()
+                        is AuthResult.Success -> onSuccess()
                         is AuthResult.Error -> error = res.message
                     }
                 }
             },
             enabled = !loading && name.isNotBlank() && location.isNotBlank() &&
                     email.isNotBlank() && password.isNotBlank(),
-            modifier = Modifier.fillMaxWidth().height(50.dp),
-            shape = RoundedCornerShape(12.dp)
+            modifier = Modifier.fillMaxWidth().height(50.dp)
         ) {
-            Text(if (loading) "Criando..." else "Criar Conta")
+            Text(if (loading) "Criando..." else "Criar conta")
         }
+
+        TextButton(
+            onClick = onBack,
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("Voltar") }
     }
 }

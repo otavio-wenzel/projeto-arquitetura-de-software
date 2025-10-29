@@ -27,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.compose.runtime.collectAsState
+import com.example.app_ajudai.ui.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,12 +49,10 @@ class MainActivity : ComponentActivity() {
 fun AppNavigation() {
     val context = LocalContext.current
 
-    // AppViewModel (já existia)
     val appVM: AppViewModel = viewModel(
         factory = AppViewModelFactory(app = context.applicationContext as Application)
     )
 
-    // AuthViewModel (precisa do Application)
     val authViewModel: AuthViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -63,23 +62,49 @@ fun AppNavigation() {
         }
     )
 
-    // Define a rota inicial pela sessão (se tiver userId, vai direto pro "main")
-    val currentUserId by authViewModel.currentUserId.collectAsState(initial = null)
-    val startDestination = if (currentUserId != null) "main" else "login"
-
+    // NÃO use mais currentUserId pra decidir startDestination aqui
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = startDestination) {
+    NavHost(
+        navController = navController,
+        startDestination = "welcome"   // ⬅️ sempre começa na Welcome
+    ) {
+        composable("welcome") {
+            WelcomeScreen(
+                authViewModel = authViewModel,            // ⬅️ passamos o VM
+                onGoLogin = { navController.navigate("login") },
+                onGoSignUp = { navController.navigate("signup") },
+                onAutoForwardToMain = {
+                    navController.navigate("main") {
+                        popUpTo("welcome") { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
 
         composable("login") {
             LoginScreen(
                 authViewModel = authViewModel,
                 onSuccess = {
                     navController.navigate("main") {
-                        popUpTo("login") { inclusive = true }
+                        popUpTo("welcome") { inclusive = true }
                         launchSingleTop = true
                     }
                 }
+            )
+        }
+
+        composable("signup") {
+            SignUpScreen(
+                authViewModel = authViewModel,
+                onSuccess = {
+                    navController.navigate("login") {
+                        popUpTo("welcome") { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
+                onBack = { navController.popBackStack() }
             )
         }
 
