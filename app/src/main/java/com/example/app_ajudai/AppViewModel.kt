@@ -9,26 +9,62 @@ import kotlinx.coroutines.launch
 
 class AppViewModel(private val repo: FavorRepository) : ViewModel() {
 
-    // Filtros
+    // -----------------------------
+    // ESTADO DE BUSCA
+    // -----------------------------
+
+    // Texto que o usuário DIGITA (campo de entrada)
+    private val _searchInput = MutableStateFlow("")
+    val searchInput: StateFlow<String> = _searchInput.asStateFlow()
+
+    // Texto que está APLICADO no filtro (apertou Buscar/Enter)
+    private val _appliedQuery = MutableStateFlow<String?>(null)
+
+    // Categorias selecionadas
     private val _selectedCategories = MutableStateFlow(emptySet<String>())
     val selectedCategories: StateFlow<Set<String>> = _selectedCategories.asStateFlow()
 
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+    fun setSearchInput(q: String) { _searchInput.value = q }
 
     fun toggleCategory(category: String) {
-        _selectedCategories.update { set -> if (set.contains(category)) set - category else set + category }
+        _selectedCategories.update { set ->
+            if (set.contains(category)) set - category else set + category
+        }
+        // aplica imediatamente ao tocar no chip
+        applyFilters()
     }
 
-    fun setSearchQuery(q: String) { _searchQuery.value = q }
+    fun clearFilters() {
+        _searchInput.value = ""
+        _selectedCategories.value = emptySet()
+        _appliedQuery.value = null
+    }
 
-    // Lista observável (filtrada)
-    val favores: StateFlow<List<Favor>> =
-        combine(_searchQuery, _selectedCategories) { q, cats -> q to cats }
-            .flatMapLatest { (q, cats) -> repo.observarFiltrados(q.ifBlank { null }, cats) }
+    // Aplica o texto digitado como query de fato
+    fun applyFilters() {
+        val q = _searchInput.value.trim()
+        _appliedQuery.value = if (q.isBlank()) null else q
+    }
+
+    /**
+     * Resultado da busca (com base em appliedQuery + categorias).
+     * Repo decide entre SQL "com" ou "sem" categorias.
+     */
+    val searchFavores: StateFlow<List<Favor>> =
+        combine(_appliedQuery, _selectedCategories) { q, cats -> q to cats }
+            .flatMapLatest { (q, cats) -> repo.observarFiltrados(q, cats) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    // Ações CRUD
+    // -----------------------------
+    // FEED (sem filtros)
+    // -----------------------------
+    val feedFavores: StateFlow<List<Favor>> =
+        repo.observarTodos()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    // -----------------------------
+    // AÇÕES CRUD
+    // -----------------------------
     fun criarFavor(titulo: String, descricao: String, categoria: String) = viewModelScope.launch {
         repo.inserir(titulo, descricao, categoria)
     }

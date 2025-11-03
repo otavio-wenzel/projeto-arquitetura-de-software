@@ -29,7 +29,7 @@ fun FeedScreen(
     onAddFavorClick: () -> Unit,
     onFavorClick: (Long) -> Unit
 ) {
-    val favores by appViewModel.favores.collectAsStateWithLifecycle()
+    val favores by appViewModel.feedFavores.collectAsStateWithLifecycle()
 
     // controle de posição da lista
     val listState = rememberLazyListState()
