@@ -11,6 +11,7 @@ interface UserRepository {
     suspend fun signUp(name: String, location: String, email: String, password: String): AuthResult
     suspend fun login(email: String, password: String): Pair<AuthResult, Long?> // (resultado, userId)
     fun observeUser(userId: Long): Flow<User?>
+    suspend fun userExists(id: Long): Boolean
 }
 
 class UserRepositoryRoom(private val dao: UserDao) : UserRepository {
@@ -45,4 +46,6 @@ class UserRepositoryRoom(private val dao: UserDao) : UserRepository {
     }
 
     override fun observeUser(userId: Long): Flow<User?> = dao.observeById(userId)
+
+    override suspend fun userExists(id: Long): Boolean = dao.existsById(id)
 }

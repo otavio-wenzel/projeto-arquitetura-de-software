@@ -17,6 +17,16 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
 
     val currentUserId = session.userIdFlow.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    // ✅ chame isso no start da UI
+    fun ensureValidSession() {
+        viewModelScope.launch {
+            val id = currentUserId.value
+            if (id != null && !repo.userExists(id)) {
+                session.setUserId(null) // limpa sessão “fantasma”
+            }
+        }
+    }
+
     fun signUp(name: String, location: String, email: String, password: String, onDone: (AuthResult) -> Unit) {
         viewModelScope.launch {
             val res = repo.signUp(name, location, email, password)

@@ -15,6 +15,7 @@ import com.example.app_ajudai.categoriasDeFavor
 @Composable
 fun SolicitarFavorScreen(
     appViewModel: AppViewModel,
+    currentUserId: Long,
     onNavigateBack: () -> Unit
 ) {
     var selectedCategory by remember { mutableStateOf("") }
@@ -92,15 +93,22 @@ fun SolicitarFavorScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
+            val canPublish = currentUserId != null &&
+                    selectedCategory.isNotEmpty() && descricao.isNotEmpty() && titulo.isNotEmpty()
+
             Button(
                 onClick = {
-                    if (selectedCategory.isNotEmpty() && descricao.isNotEmpty() && titulo.isNotEmpty()) {
-                        appViewModel.criarFavor(titulo, descricao, selectedCategory)
-                        onNavigateBack()
-                    }
+                    // safety: só entra aqui se tiver user
+                    appViewModel.criarFavor(
+                        userId = currentUserId!!,
+                        titulo = titulo,
+                        descricao = descricao,
+                        categoria = selectedCategory
+                    )
+                    onNavigateBack()
                 },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                enabled = selectedCategory.isNotEmpty() && descricao.isNotEmpty() && titulo.isNotEmpty()
+                enabled = canPublish,
+                modifier = Modifier.fillMaxWidth().height(50.dp)
             ) { Text("Publicar Pedido", style = MaterialTheme.typography.labelLarge) }
         }
     }

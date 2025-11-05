@@ -3,7 +3,6 @@ package com.example.app_ajudai.data
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 
-// data/FavorDao.kt
 @Dao
 interface FavorDao {
 
@@ -22,7 +21,16 @@ interface FavorDao {
     @Query("SELECT * FROM favor WHERE id = :id LIMIT 1")
     fun observarPorId(id: Long): Flow<Favor?>
 
-    // QUANDO HÁ categorias selecionadas
+    // 👇 opcional: todos os favores de um usuário específico
+    @Query("SELECT * FROM favor WHERE userId = :userId ORDER BY createdAt DESC")
+    fun observarDoUsuario(userId: Long): Flow<List<Favor>>
+
+    // 👇 opcional: detalhe já com o User
+    @Transaction
+    @Query("SELECT * FROM favor WHERE id = :id LIMIT 1")
+    fun observarFavorComUsuario(id: Long): Flow<FavorWithUser?>
+
+    // Filtros (sem mudança de lógica, agora a tabela já tem userId indexado)
     @Query("""
         SELECT * FROM favor
         WHERE (:query IS NULL OR :query = '' 
@@ -36,7 +44,6 @@ interface FavorDao {
         categorias: List<String>
     ): Flow<List<Favor>>
 
-    // QUANDO NÃO HÁ categorias selecionadas
     @Query("""
         SELECT * FROM favor
         WHERE (:query IS NULL OR :query = '' 
@@ -44,7 +51,5 @@ interface FavorDao {
            OR descricao LIKE '%' || :query || '%')
         ORDER BY createdAt DESC
     """)
-    fun observarFiltradosSemCategoria(
-        query: String?
-    ): Flow<List<Favor>>
+    fun observarFiltradosSemCategoria(query: String?): Flow<List<Favor>>
 }

@@ -23,6 +23,7 @@ import com.example.app_ajudai.ui.theme.AppajudaiTheme
 import androidx.compose.ui.platform.LocalContext
 import com.example.app_ajudai.ui.LoginScreen
 import android.app.Application
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -65,6 +66,11 @@ fun AppNavigation() {
     )
 
     val navController = rememberNavController()
+
+    LaunchedEffect(Unit) {
+        authViewModel.ensureValidSession()
+    }
+
 
     NavHost(
         navController = navController,
@@ -130,10 +136,26 @@ fun AppNavigation() {
         }
 
         composable("solicitar_favor") {
-            SolicitarFavorScreen(
-                appViewModel = appVM,
-                onNavigateBack = { navController.popBackStack() }
-            )
+            // coletar o id atual (não deve ser nulo se a guarda de sessão do Main estiver funcionando)
+            val userId by authViewModel.currentUserId.collectAsState(initial = null)
+
+            // Se, por qualquer motivo, estiver nulo, você pode redirecionar ou desabilitar a publicação
+            if (userId == null) {
+                // fallback simples: voltar ou mostrar mensagem
+                // navController.popBackStack()
+                // ou exibir um texto
+                SolicitarFavorScreen(
+                    appViewModel = appVM,
+                    currentUserId = 0L, // placeholder; o botão ficará habilitado só se você quiser
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            } else {
+                SolicitarFavorScreen(
+                    appViewModel = appVM,
+                    currentUserId = userId!!,                     // 👈 aqui vai o autor
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
         }
 
         composable(

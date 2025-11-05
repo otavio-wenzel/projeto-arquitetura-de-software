@@ -13,4 +13,11 @@ interface UserDao {
 
     @Query("SELECT * FROM user WHERE id = :id LIMIT 1")
     fun observeById(id: Long): Flow<User?>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM user WHERE id = :id)")
+    suspend fun existsById(id: Long): Boolean
+
+    @Query("SELECT * FROM user WHERE id = :id LIMIT 1")
+    suspend fun getById(id: Long): User? // opcional, às vezes é útil
+
 }

@@ -65,9 +65,10 @@ class AppViewModel(private val repo: FavorRepository) : ViewModel() {
     // -----------------------------
     // AÇÕES CRUD
     // -----------------------------
-    fun criarFavor(titulo: String, descricao: String, categoria: String) = viewModelScope.launch {
-        repo.inserir(titulo, descricao, categoria)
-    }
+    fun criarFavor(userId: Long, titulo: String, descricao: String, categoria: String) =
+        viewModelScope.launch {
+            repo.inserir(userId, titulo, descricao, categoria)
+        }
 
     fun deletarFavor(favor: Favor) = viewModelScope.launch { repo.deletar(favor) }
 }
