@@ -18,6 +18,12 @@ interface UserDao {
     suspend fun existsById(id: Long): Boolean
 
     @Query("SELECT * FROM user WHERE id = :id LIMIT 1")
-    suspend fun getById(id: Long): User? // opcional, às vezes é útil
+    suspend fun getById(id: Long): User?
+
+    @Query("UPDATE user SET name = :name WHERE id = :id")
+    suspend fun updateName(id: Long, name: String): Int
+
+    @Query("UPDATE user SET passwordHash = :passwordHash WHERE id = :id")
+    suspend fun updatePasswordHash(id: Long, passwordHash: String): Int
 
 }

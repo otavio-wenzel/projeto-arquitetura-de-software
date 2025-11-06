@@ -12,6 +12,9 @@ interface UserRepository {
     suspend fun login(email: String, password: String): Pair<AuthResult, Long?> // (resultado, userId)
     fun observeUser(userId: Long): Flow<User?>
     suspend fun userExists(id: Long): Boolean
+    suspend fun updateName(userId: Long, newName: String): AuthResult
+    suspend fun changePassword(userId: Long, oldPassword: String, newPassword: String): AuthResult
+
 }
 
 class UserRepositoryRoom(private val dao: UserDao) : UserRepository {
@@ -48,4 +51,27 @@ class UserRepositoryRoom(private val dao: UserDao) : UserRepository {
     override fun observeUser(userId: Long): Flow<User?> = dao.observeById(userId)
 
     override suspend fun userExists(id: Long): Boolean = dao.existsById(id)
+
+    override suspend fun updateName(userId: Long, newName: String): AuthResult {
+        val name = newName.trim()
+        if (name.isBlank()) return AuthResult.Error("O nome não pode ficar vazio.")
+        val rows = dao.updateName(userId, name)
+        return if (rows > 0) AuthResult.Success else AuthResult.Error("Não foi possível atualizar o nome.")
+    }
+
+    override suspend fun changePassword(
+        userId: Long,
+        oldPassword: String,
+        newPassword: String
+    ): AuthResult {
+        if (oldPassword.isBlank() || newPassword.isBlank())
+            return AuthResult.Error("Informe as senhas.")
+        val user = dao.getById(userId) ?: return AuthResult.Error("Usuário não encontrado.")
+        val oldHash = PasswordHasher.sha256(oldPassword)
+        if (user.passwordHash != oldHash) return AuthResult.Error("Senha atual incorreta.")
+        val newHash = PasswordHasher.sha256(newPassword)
+        if (newHash == user.passwordHash) return AuthResult.Error("A nova senha deve ser diferente da atual.")
+        val rows = dao.updatePasswordHash(userId, newHash)
+        return if (rows > 0) AuthResult.Success else AuthResult.Error("Não foi possível alterar a senha.")
+    }
 }

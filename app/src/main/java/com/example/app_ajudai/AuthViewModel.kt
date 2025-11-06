@@ -51,4 +51,14 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
     fun observeUser() = currentUserId.value?.let { id ->
         repo.observeUser(id)
     }
+
+    fun updateName(newName: String, onDone: (AuthResult) -> Unit) {
+        val id = currentUserId.value ?: return onDone(AuthResult.Error("Sessão expirada."))
+        viewModelScope.launch { onDone(repo.updateName(id, newName)) }
+    }
+
+    fun changePassword(oldPassword: String, newPassword: String, onDone: (AuthResult) -> Unit) {
+        val id = currentUserId.value ?: return onDone(AuthResult.Error("Sessão expirada."))
+        viewModelScope.launch { onDone(repo.changePassword(id, oldPassword, newPassword)) }
+    }
 }
