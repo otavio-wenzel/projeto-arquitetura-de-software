@@ -12,6 +12,7 @@ interface FavorRepository {
     suspend fun deletar(favor: Favor)
     // opcional
     fun observarDoUsuario(userId: Long): Flow<List<Favor>> = flowOf(emptyList())
+    fun observarFavorComUsuario(id: Long): Flow<FavorWithUser?>
 }
 
 // data/FavorRepository.kt
@@ -45,4 +46,7 @@ class FavorRepositoryRoom(private val dao: FavorDao) : FavorRepository {
 
     // opcional
     override fun observarDoUsuario(userId: Long): Flow<List<Favor>> = dao.observarDoUsuario(userId)
+
+    override fun observarFavorComUsuario(id: Long): Flow<FavorWithUser?> =
+        dao.observarFavorComUsuario(id)
 }

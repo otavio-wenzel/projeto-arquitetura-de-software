@@ -71,4 +71,13 @@ class AppViewModel(private val repo: FavorRepository) : ViewModel() {
         }
 
     fun deletarFavor(favor: Favor) = viewModelScope.launch { repo.deletar(favor) }
+
+    // 🔹 fluxo dos favores do usuário logado
+    fun observarMeusFavores(userId: Long) = repo.observarDoUsuario(userId)
+
+    // 🔹 atualizar um favor existente
+    fun atualizarFavor(editado: Favor) = viewModelScope.launch { repo.atualizar(editado) }
+
+    fun observarPorId(id: Long) = repo.observarPorId(id)
+
 }

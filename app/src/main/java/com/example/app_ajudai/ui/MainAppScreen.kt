@@ -37,7 +37,8 @@ fun MainAppScreen(
     onNavigateToSolicitarFavor: () -> Unit,
     onNavigateToFavorDetail: (Long) -> Unit,
     authViewModel: AuthViewModel,
-    onRequestLogout: () -> Unit
+    onRequestLogout: () -> Unit,
+    onGoMyPosts: () -> Unit
 ) {
     val tabsController = rememberNavController()
 
@@ -94,7 +95,8 @@ fun MainAppScreen(
             composable(Screen.Profile.route) {
                 ProfileScreen(
                     authViewModel = authViewModel,
-                    onLogout = onRequestLogout   // 🔗 repassa ação de sair
+                    onLogout = onRequestLogout,   // 🔗 repassa ação de sair
+                    onGoMyPosts = onGoMyPosts
                 )
             }
         }

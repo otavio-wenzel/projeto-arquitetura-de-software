@@ -2,6 +2,7 @@ package com.example.app_ajudai.data
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
+import androidx.room.Transaction
 
 @Dao
 interface FavorDao {
@@ -29,6 +30,7 @@ interface FavorDao {
     @Transaction
     @Query("SELECT * FROM favor WHERE id = :id LIMIT 1")
     fun observarFavorComUsuario(id: Long): Flow<FavorWithUser?>
+
 
     // Filtros (sem mudança de lógica, agora a tabela já tem userId indexado)
     @Query("""

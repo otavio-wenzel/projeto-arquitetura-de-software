@@ -26,8 +26,9 @@ fun FavorDetailScreen(
     repo: FavorRepository,
     onNavigateBack: () -> Unit
 ) {
-    val favorFlow = remember(favorId) { repo.observarPorId(favorId) }
-    val favor by favorFlow.collectAsStateWithLifecycle(initialValue = null)
+    // 🔄 agora observamos Favor + User
+    val favorWithUserFlow = remember(favorId) { repo.observarFavorComUsuario(favorId) }
+    val favorWithUser by favorWithUserFlow.collectAsStateWithLifecycle(initialValue = null)
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -51,11 +52,13 @@ fun FavorDetailScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding) // já considera a altura do TopAppBar
+                .padding(innerPadding)
         ) {
-            if (favor != null) {
+            val data = favorWithUser
+            if (data != null) {
                 FavorDetailContent(
-                    favor = favor!!,
+                    favor = data.favor,
+                    authorName = data.user.name,            // 👈 nome do autor
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp),
@@ -75,11 +78,10 @@ fun FavorDetailScreen(
                 }
             }
 
-            // ✅ Snackbar no topo
             SnackbarHost(
                 hostState = snackbarHostState,
                 modifier = Modifier
-                    .align(Alignment.TopCenter) // topo da área já com padding do Scaffold
+                    .align(Alignment.TopCenter)
                     .padding(top = 12.dp)
             )
         }
@@ -89,6 +91,7 @@ fun FavorDetailScreen(
 @Composable
 private fun FavorDetailContent(
     favor: Favor,
+    authorName: String,           // 👈 novo parâmetro
     modifier: Modifier = Modifier,
     onHelpClick: () -> Unit
 ) {
@@ -99,18 +102,31 @@ private fun FavorDetailContent(
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Column {
+            // categoria
             Text(
                 favor.categoria,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(8.dp))
+
+            // título
             Text(favor.titulo, style = MaterialTheme.typography.titleLarge)
-            Spacer(modifier = Modifier.height(16.dp))
+
+            // 👇 bloco “Publicado por”
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Publicado por $authorName",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(Modifier.height(16.dp))
             Text(favor.descricao, style = MaterialTheme.typography.bodyLarge)
         }
+
         Button(
-            onClick = onHelpClick,              // ✅ usa o callback
+            onClick = onHelpClick,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp),

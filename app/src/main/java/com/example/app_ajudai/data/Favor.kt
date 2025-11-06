@@ -1,8 +1,10 @@
 package com.example.app_ajudai.data
 
+import androidx.room.*
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import androidx.room.*
+import androidx.room.Embedded
+import androidx.room.Relation
 
 @Entity(
     tableName = "favor",

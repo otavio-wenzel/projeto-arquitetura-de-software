@@ -29,7 +29,8 @@ import androidx.compose.ui.text.style.TextAlign
 @Composable
 fun ProfileScreen(
     authViewModel: AuthViewModel,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onGoMyPosts: () -> Unit
 ) {
     val currentUserId by authViewModel.currentUserId.collectAsState(initial = null)
     val userFlow = remember(currentUserId) { authViewModel.observeUser() ?: flowOf<User?>(null) }
@@ -80,6 +81,16 @@ fun ProfileScreen(
                 }
 
                 Spacer(Modifier.height(30.dp))
+
+                Button(
+                    onClick = onGoMyPosts,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Minhas publicações")
+                }
+
+                Spacer(Modifier.height(12.dp))
+
                 Button(
                     onClick = {
                         authViewModel.logout() // zera sessão

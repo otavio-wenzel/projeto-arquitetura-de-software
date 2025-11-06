@@ -125,13 +125,44 @@ fun AppNavigation() {
                 },
                 authViewModel = authViewModel,
                 onRequestLogout = {
-                    // derruba sessão e vai para a Welcome limpando a pilha inteira
                     authViewModel.logout()
                     navController.navigate("welcome") {
                         popUpTo(0)
                         launchSingleTop = true
                     }
+                },
+                // 👇 passaremos o atalho para "Minhas publicações" via Profile
+                onGoMyPosts = {
+                    val uid = authViewModel.currentUserId.value ?: return@MainAppScreen
+                    navController.navigate("my_posts/$uid")
                 }
+            )
+        }
+
+// 🔹 lista de publicações do usuário
+        composable(
+            route = "my_posts/{userId}",
+            arguments = listOf(navArgument("userId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val uid = backStackEntry.arguments?.getLong("userId") ?: return@composable
+            MyPostsScreen(
+                userId = uid,
+                appViewModel = appVM,
+                onNavigateBack = { navController.popBackStack() },
+                onOpenManage = { favorId -> navController.navigate("my_post_manage/$favorId") }
+            )
+        }
+
+// 🔹 gerenciar (editar/excluir) uma publicação
+        composable(
+            route = "my_post_manage/{favorId}",
+            arguments = listOf(navArgument("favorId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val fid = backStackEntry.arguments?.getLong("favorId") ?: return@composable
+            ManageMyPostScreen(
+                favorId = fid,
+                appViewModel = appVM,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
