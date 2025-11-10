@@ -51,7 +51,6 @@ fun ProfileScreen(
     val userFlow = remember(currentUserId) { authViewModel.observeUser() ?: flowOf<User?>(null) }
     val user by userFlow.collectAsState(initial = null)
 
-    // Estados dos diálogos
     var showNameDialog by remember { mutableStateOf(false) }
     var showPasswordDialog by remember { mutableStateOf(false) }
 
@@ -84,11 +83,39 @@ fun ProfileScreen(
                 }
 
                 Spacer(Modifier.height(16.dp))
-                Text(user!!.name, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+                Text(
+                    text = user!!.name,
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "4.5 / 5",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+
+                // ✅ Localidade do usuário
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.LocationOn,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = user!!.location,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
 
                 Spacer(Modifier.height(24.dp))
 
-                // 🔹 Botões de ação
+                // Ações
                 Button(
                     onClick = onGoMyPosts,
                     modifier = Modifier.fillMaxWidth()
@@ -126,9 +153,7 @@ fun ProfileScreen(
         }
     }
 
-    // =======================
-    // Diálogo: Editar nome
-    // =======================
+    // ===== Diálogo: Editar nome =====
     if (showNameDialog) {
         var newName by remember { mutableStateOf(user?.name ?: "") }
         AlertDialog(
@@ -165,9 +190,7 @@ fun ProfileScreen(
         )
     }
 
-    // =======================
-    // Diálogo: Alterar senha
-    // =======================
+    // ===== Diálogo: Alterar senha =====
     if (showPasswordDialog) {
         var oldPass by remember { mutableStateOf("") }
         var newPass by remember { mutableStateOf("") }

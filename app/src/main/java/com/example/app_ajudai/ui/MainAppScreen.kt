@@ -23,6 +23,14 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.unit.dp
 import com.example.app_ajudai.AuthViewModel
 import androidx.compose.runtime.*
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.app_ajudai.data.AppDatabase
+import com.example.app_ajudai.data.FavorRepositoryRoom
+import com.example.app_ajudai.ui.FavorDetailScreen
 
 sealed class Screen(val route: String, val label: String, val icon: @Composable () -> Unit) {
     object Feed : Screen("feed", "Início", { Icon(Icons.Filled.Home, contentDescription = "Início") })
@@ -83,20 +91,40 @@ fun MainAppScreen(
                 FeedScreen(
                     appViewModel = appViewModel,
                     onAddFavorClick = onNavigateToSolicitarFavor,
-                    onFavorClick = onNavigateToFavorDetail
+                    // ✅ agora navega DENTRO do tabsController:
+                    onFavorClick = { id -> tabsController.navigate("favor_detail/$id") }
                 )
             }
             composable(Screen.Search.route) {
                 SearchScreen(
                     appViewModel = appViewModel,
-                    onNavigateToFavorDetail = onNavigateToFavorDetail
+                    // ✅ idem aqui:
+                    onNavigateToFavorDetail = { id -> tabsController.navigate("favor_detail/$id") }
                 )
             }
             composable(Screen.Profile.route) {
                 ProfileScreen(
                     authViewModel = authViewModel,
-                    onLogout = onRequestLogout,   // 🔗 repassa ação de sair
+                    onLogout = onRequestLogout,
                     onGoMyPosts = onGoMyPosts
+                )
+            }
+
+            // ✅ NOVA ROTA: detalhe dentro do Main (herda a BottomAppBar)
+            composable(
+                route = "favor_detail/{favorId}",
+                arguments = listOf(navArgument("favorId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val id = backStackEntry.arguments?.getLong("favorId") ?: -1L
+                val context = LocalContext.current
+                val repo = remember { FavorRepositoryRoom(AppDatabase.get(context).favorDao()) }
+                val currentUserId by authViewModel.currentUserId.collectAsState(initial = null)
+
+                FavorDetailScreen(
+                    favorId = id,
+                    repo = repo,
+                    onNavigateBack = { tabsController.popBackStack() }, // volta mantendo a barra
+                    currentUserId = currentUserId
                 )
             }
         }

@@ -195,10 +195,13 @@ fun AppNavigation() {
         ) { backStackEntry ->
             val id = backStackEntry.arguments?.getLong("favorId") ?: -1L
             val repo = FavorRepositoryRoom(AppDatabase.get(context).favorDao())
+            val currentUserId by authViewModel.currentUserId.collectAsState(initial = null) // 👈 pegar sessão
+
             FavorDetailScreen(
                 favorId = id,
                 repo = repo,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                currentUserId = currentUserId                               // 👈 passar para a tela
             )
         }
     }

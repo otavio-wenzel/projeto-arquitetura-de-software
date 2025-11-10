@@ -24,7 +24,8 @@ import kotlinx.coroutines.launch
 fun FavorDetailScreen(
     favorId: Long,
     repo: FavorRepository,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    currentUserId: Long?
 ) {
     // 🔄 agora observamos Favor + User
     val favorWithUserFlow = remember(favorId) { repo.observarFavorComUsuario(favorId) }
@@ -56,9 +57,12 @@ fun FavorDetailScreen(
         ) {
             val data = favorWithUser
             if (data != null) {
+                val isOwner = (currentUserId != null) && (currentUserId == data.favor.userId)
+
                 FavorDetailContent(
                     favor = data.favor,
-                    authorName = data.user.name,            // 👈 nome do autor
+                    authorName = data.user.name,
+                    showHelpButton = !isOwner,                   // 👈 só mostra se NÃO for dono
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp),
@@ -91,7 +95,8 @@ fun FavorDetailScreen(
 @Composable
 private fun FavorDetailContent(
     favor: Favor,
-    authorName: String,           // 👈 novo parâmetro
+    authorName: String,
+    showHelpButton: Boolean,    // 👈 novo parâmetro
     modifier: Modifier = Modifier,
     onHelpClick: () -> Unit
 ) {
@@ -125,14 +130,21 @@ private fun FavorDetailContent(
             Text(favor.descricao, style = MaterialTheme.typography.bodyLarge)
         }
 
-        Button(
-            onClick = onHelpClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
-            shape = MaterialTheme.shapes.medium
-        ) {
-            Text("Quero Ajudar!", style = MaterialTheme.typography.labelLarge)
+        if (showHelpButton) {
+            Button(
+                onClick = onHelpClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = MaterialTheme.shapes.medium
+            ) { Text("Quero Ajudar!", style = MaterialTheme.typography.labelLarge) }
+        } else {
+            Text(
+                "Esta é a sua publicação.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
