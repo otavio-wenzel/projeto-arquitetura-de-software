@@ -1,5 +1,6 @@
 package com.example.app_ajudai.ui
 
+import android.app.Application
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -27,7 +28,11 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.app_ajudai.InboxViewModel
 import com.example.app_ajudai.data.AppDatabase
 import com.example.app_ajudai.data.FavorRepositoryRoom
 import com.example.app_ajudai.ui.FavorDetailScreen
@@ -43,19 +48,11 @@ private val items = listOf(Screen.Feed, Screen.Search, Screen.Profile)
 fun MainAppScreen(
     appViewModel: AppViewModel,
     onNavigateToSolicitarFavor: () -> Unit,
-    onNavigateToFavorDetail: (Long) -> Unit,
     authViewModel: AuthViewModel,
     onRequestLogout: () -> Unit,
     onGoMyPosts: () -> Unit
 ) {
     val tabsController = rememberNavController()
-
-    // 🚧 Guarda de sessão dentro do "main":
-    // Se a sessão cair (logout), pedimos para o Nav raiz ir para a Welcome.
-    val currentUserId by authViewModel.currentUserId.collectAsState(initial = null)
-    LaunchedEffect(currentUserId) {
-        if (currentUserId == null) onRequestLogout()
-    }
 
     Scaffold(
         bottomBar = {
@@ -87,30 +84,34 @@ fun MainAppScreen(
             startDestination = Screen.Feed.route,
             modifier = Modifier.padding(innerPadding)
         ) {
+            // FEED -> navega para detalhe DENTRO do tabsController
             composable(Screen.Feed.route) {
                 FeedScreen(
                     appViewModel = appViewModel,
                     onAddFavorClick = onNavigateToSolicitarFavor,
-                    // ✅ agora navega DENTRO do tabsController:
                     onFavorClick = { id -> tabsController.navigate("favor_detail/$id") }
                 )
             }
+            // SEARCH -> idem
             composable(Screen.Search.route) {
                 SearchScreen(
                     appViewModel = appViewModel,
-                    // ✅ idem aqui:
                     onNavigateToFavorDetail = { id -> tabsController.navigate("favor_detail/$id") }
                 )
             }
+            // PROFILE
             composable(Screen.Profile.route) {
                 ProfileScreen(
                     authViewModel = authViewModel,
                     onLogout = onRequestLogout,
-                    onGoMyPosts = onGoMyPosts
+                    onGoMyPosts = onGoMyPosts,
+                    onGoInbox = { tabsController.navigate("inbox") }   // ✅ navega no grafo interno
                 )
             }
 
-            // ✅ NOVA ROTA: detalhe dentro do Main (herda a BottomAppBar)
+            // ===== Rotas internas (herdam a BottomBar) =====
+
+            // Detalhe do favor
             composable(
                 route = "favor_detail/{favorId}",
                 arguments = listOf(navArgument("favorId") { type = NavType.LongType })
@@ -123,8 +124,50 @@ fun MainAppScreen(
                 FavorDetailScreen(
                     favorId = id,
                     repo = repo,
-                    onNavigateBack = { tabsController.popBackStack() }, // volta mantendo a barra
+                    onNavigateBack = { tabsController.popBackStack() },
                     currentUserId = currentUserId
+                )
+            }
+
+            // Inbox (lista)
+            composable("inbox") {
+                val context = LocalContext.current
+                val inboxVM: InboxViewModel = viewModel(factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return InboxViewModel(context.applicationContext as Application) as T
+                    }
+                })
+                val uid by authViewModel.currentUserId.collectAsState(initial = null)
+                if (uid == null) {
+                    Text("Sessão expirada.")
+                } else {
+                    InboxScreen(
+                        userId = uid!!,
+                        inboxViewModel = inboxVM,
+                        onNavigateBack = { tabsController.popBackStack() },
+                        onOpenRequest = { reqId -> tabsController.navigate("inbox_detail/$reqId") }
+                    )
+                }
+            }
+
+            // Detalhe da solicitação
+            composable(
+                route = "inbox_detail/{requestId}",
+                arguments = listOf(navArgument("requestId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val context = LocalContext.current
+                val inboxVM: InboxViewModel = viewModel(factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return InboxViewModel(context.applicationContext as Application) as T
+                    }
+                })
+                val reqId = backStackEntry.arguments?.getLong("requestId") ?: -1L
+                InboxRequestDetailScreen(
+                    requestId = reqId,
+                    inboxViewModel = inboxVM,
+                    onNavigateBack = { tabsController.popBackStack() }
                 )
             }
         }

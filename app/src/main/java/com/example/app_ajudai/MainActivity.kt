@@ -71,7 +71,6 @@ fun AppNavigation() {
         authViewModel.ensureValidSession()
     }
 
-
     NavHost(
         navController = navController,
         startDestination = "welcome"
@@ -106,7 +105,6 @@ fun AppNavigation() {
             SignUpScreen(
                 authViewModel = authViewModel,
                 onSuccess = {
-                    // após criar conta, pode mandar para o login (ou direto pro main, se preferir)
                     navController.navigate("login") {
                         popUpTo("welcome") { inclusive = false }
                         launchSingleTop = true
@@ -120,9 +118,6 @@ fun AppNavigation() {
             MainAppScreen(
                 appViewModel = appVM,
                 onNavigateToSolicitarFavor = { navController.navigate("solicitar_favor") },
-                onNavigateToFavorDetail = { favorId ->
-                    navController.navigate("favor_detail/$favorId")
-                },
                 authViewModel = authViewModel,
                 onRequestLogout = {
                     authViewModel.logout()
@@ -131,15 +126,15 @@ fun AppNavigation() {
                         launchSingleTop = true
                     }
                 },
-                // 👇 passaremos o atalho para "Minhas publicações" via Profile
                 onGoMyPosts = {
                     val uid = authViewModel.currentUserId.value ?: return@MainAppScreen
                     navController.navigate("my_posts/$uid")
                 }
             )
+
         }
 
-// 🔹 lista de publicações do usuário
+        // Lista de publicações do usuário
         composable(
             route = "my_posts/{userId}",
             arguments = listOf(navArgument("userId") { type = NavType.LongType })
@@ -153,7 +148,7 @@ fun AppNavigation() {
             )
         }
 
-// 🔹 gerenciar (editar/excluir) uma publicação
+        // Gerenciar (editar/excluir) uma publicação
         composable(
             route = "my_post_manage/{favorId}",
             arguments = listOf(navArgument("favorId") { type = NavType.LongType })
@@ -166,43 +161,16 @@ fun AppNavigation() {
             )
         }
 
+        // Publicar novo favor
         composable("solicitar_favor") {
-            // coletar o id atual (não deve ser nulo se a guarda de sessão do Main estiver funcionando)
             val userId by authViewModel.currentUserId.collectAsState(initial = null)
-
-            // Se, por qualquer motivo, estiver nulo, você pode redirecionar ou desabilitar a publicação
-            if (userId == null) {
-                // fallback simples: voltar ou mostrar mensagem
-                // navController.popBackStack()
-                // ou exibir um texto
-                SolicitarFavorScreen(
-                    appViewModel = appVM,
-                    currentUserId = 0L, // placeholder; o botão ficará habilitado só se você quiser
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            } else {
-                SolicitarFavorScreen(
-                    appViewModel = appVM,
-                    currentUserId = userId!!,                     // 👈 aqui vai o autor
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
-        }
-
-        composable(
-            route = "favor_detail/{favorId}",
-            arguments = listOf(navArgument("favorId") { type = NavType.LongType })
-        ) { backStackEntry ->
-            val id = backStackEntry.arguments?.getLong("favorId") ?: -1L
-            val repo = FavorRepositoryRoom(AppDatabase.get(context).favorDao())
-            val currentUserId by authViewModel.currentUserId.collectAsState(initial = null) // 👈 pegar sessão
-
-            FavorDetailScreen(
-                favorId = id,
-                repo = repo,
-                onNavigateBack = { navController.popBackStack() },
-                currentUserId = currentUserId                               // 👈 passar para a tela
+            SolicitarFavorScreen(
+                appViewModel = appVM,
+                currentUserId = userId ?: 0L,  // se nulo, você pode redirecionar/avisar; aqui só evita crash
+                onNavigateBack = { navController.popBackStack() }
             )
         }
+
+        // ⛔️ REMOVIDO: rota raiz "favor_detail/{favorId}" — ela foi movida para dentro do MainAppScreen
     }
 }

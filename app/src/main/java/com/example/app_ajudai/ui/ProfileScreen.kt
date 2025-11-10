@@ -42,7 +42,8 @@ import kotlinx.coroutines.launch
 fun ProfileScreen(
     authViewModel: AuthViewModel,
     onLogout: () -> Unit,
-    onGoMyPosts: () -> Unit
+    onGoMyPosts: () -> Unit,
+    onGoInbox: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
@@ -69,7 +70,7 @@ fun ProfileScreen(
                 // Avatar
                 Box(
                     modifier = Modifier
-                        .size(100.dp)
+                        .size(80.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
@@ -78,11 +79,11 @@ fun ProfileScreen(
                         imageVector = Icons.Filled.Person,
                         contentDescription = "Avatar",
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(40.dp)
                     )
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(10.dp))
                 Text(
                     text = user!!.name,
                     style = MaterialTheme.typography.titleLarge,
@@ -113,7 +114,7 @@ fun ProfileScreen(
                     )
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(8.dp))
 
                 // Ações
                 Button(
@@ -121,7 +122,16 @@ fun ProfileScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) { Text("Minhas publicações") }
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
+
+                OutlinedButton(
+                    onClick = onGoInbox,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                ) { Text("Caixa de entrada") }
+
+                Spacer(Modifier.height(8.dp))
 
                 OutlinedButton(
                     onClick = { showNameDialog = true },
@@ -135,7 +145,7 @@ fun ProfileScreen(
                         .padding(top = 8.dp)
                 ) { Text("Alterar senha") }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(8.dp))
 
                 Button(
                     onClick = {

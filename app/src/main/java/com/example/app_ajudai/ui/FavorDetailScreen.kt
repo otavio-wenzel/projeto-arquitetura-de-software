@@ -18,6 +18,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import kotlinx.coroutines.launch
+import android.app.Application
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.app_ajudai.InboxViewModel
+import com.example.app_ajudai.data.InboxResult
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,13 +34,22 @@ fun FavorDetailScreen(
     onNavigateBack: () -> Unit,
     currentUserId: Long?
 ) {
-    // 🔄 agora observamos Favor + User
+    // Observa Favor + User
     val favorWithUserFlow = remember(favorId) { repo.observarFavorComUsuario(favorId) }
     val favorWithUser by favorWithUserFlow.collectAsStateWithLifecycle(initialValue = null)
 
+    // InboxViewModel (para criar solicitação)
+    val context = LocalContext.current
+    val inboxVM: InboxViewModel = viewModel(factory = object : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            @Suppress("UNCHECKED_CAST")
+            return InboxViewModel(context.applicationContext as Application) as T
+        }
+    })
+
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    var alreadyNotified by rememberSaveable { mutableStateOf(false) }
+    var alreadyNotified by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -48,7 +64,8 @@ fun FavorDetailScreen(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -62,18 +79,44 @@ fun FavorDetailScreen(
                 FavorDetailContent(
                     favor = data.favor,
                     authorName = data.user.name,
-                    showHelpButton = !isOwner,                   // 👈 só mostra se NÃO for dono
+                    showHelpButton = !isOwner,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp),
                     onHelpClick = {
-                        val msg = if (!alreadyNotified) {
-                            alreadyNotified = true
-                            "Notificando o solicitante."
-                        } else {
-                            "O solicitante já foi notificado."
+                        // Se não logado, só avisa
+                        val me = currentUserId
+                        if (me == null) {
+                            scope.launch {
+                                snackbarHostState.showSnackbar("Faça login para continuar.")
+                            }
+                            return@FavorDetailContent
                         }
-                        scope.launch { snackbarHostState.showSnackbar(msg) }
+                        // Evita spam de cliques após sucesso
+                        if (alreadyNotified) {
+                            scope.launch {
+                                snackbarHostState.showSnackbar("Você já enviou interesse para este favor.")
+                            }
+                            return@FavorDetailContent
+                        }
+                        // Cria a HelpRequest para o dono do favor
+                        inboxVM.requestHelp(
+                            favorId = data.favor.id,
+                            requesterId = me,
+                            recipientId = data.favor.userId
+                        ) { res ->
+                            scope.launch {
+                                when (res) {
+                                    is InboxResult.Success -> {
+                                        alreadyNotified = true
+                                        snackbarHostState.showSnackbar("Interesse enviado ao autor!")
+                                    }
+                                    is InboxResult.Error -> {
+                                        snackbarHostState.showSnackbar(res.message)
+                                    }
+                                }
+                            }
+                        }
                     }
                 )
             } else {
@@ -81,13 +124,6 @@ fun FavorDetailScreen(
                     Text("Erro: Favor não encontrado.", color = MaterialTheme.colorScheme.error)
                 }
             }
-
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 12.dp)
-            )
         }
     }
 }
@@ -96,7 +132,7 @@ fun FavorDetailScreen(
 private fun FavorDetailContent(
     favor: Favor,
     authorName: String,
-    showHelpButton: Boolean,    // 👈 novo parâmetro
+    showHelpButton: Boolean,
     modifier: Modifier = Modifier,
     onHelpClick: () -> Unit
 ) {
@@ -107,7 +143,6 @@ private fun FavorDetailContent(
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Column {
-            // categoria
             Text(
                 favor.categoria,
                 style = MaterialTheme.typography.bodyMedium,
@@ -115,10 +150,8 @@ private fun FavorDetailContent(
             )
             Spacer(Modifier.height(8.dp))
 
-            // título
             Text(favor.titulo, style = MaterialTheme.typography.titleLarge)
 
-            // 👇 bloco “Publicado por”
             Spacer(Modifier.height(8.dp))
             Text(
                 text = "Publicado por $authorName",
